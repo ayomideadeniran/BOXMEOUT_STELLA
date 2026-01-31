@@ -14,9 +14,13 @@ mod factory;
 mod market;
 mod oracle;
 mod treasury;
+
+pub mod helpers;
+
 #[cfg(test)]
 mod test_treasury;
-pub mod helpers;
+#[cfg(test)]
+mod treasury_integration_tests;
 
 // Export all contracts - needed for integration tests
 pub use amm::*;

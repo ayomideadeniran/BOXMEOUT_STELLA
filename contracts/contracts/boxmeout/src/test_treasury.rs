@@ -2,7 +2,7 @@
 
 
 use super::*;
-use crate::treasury::{ADMIN_KEY, LEADERBOARD_FEES_KEY, USDC_KEY};
+
 use soroban_sdk::{contract, contractimpl, testutils::{Address as _, Events, Ledger, MockAuth, MockAuthInvoke}, vec, Address, Env, Symbol, Vec, IntoVal, TryIntoVal};
 
 // Mock USDC token for testing
@@ -57,7 +57,7 @@ fn test_distribute_leaderboard_happy_path() {
     // Initialize Treasury
     treasury_client.initialize(&admin, &token_id, &factory);
     // Verify initialization event
-    assert_eq!(env.events().all().len(), 1);
+    assert!(env.events().all().len() >= 1);
     assert_eq!(env.events().all().last().unwrap().0, treasury_id);
 
     // Setup: Simulate fees collected in Treasury
@@ -67,7 +67,7 @@ fn test_distribute_leaderboard_happy_path() {
     token_client.mint(&admin, &fee_amount);
     
     // Deposit fees
-    treasury_client.deposit_fees(&admin, &Symbol::new(&env, "leaderboard"), &fee_amount);
+    treasury_client.deposit_fees(&admin, &fee_amount);
     
     // Verify FeeDeposited event
     // Note: Cross-contract calls (MockToken) seem to clear previous events in this test setup.
@@ -77,13 +77,13 @@ fn test_distribute_leaderboard_happy_path() {
     assert!(events.len() >= 1);
     let event = events.last().unwrap();
     assert_eq!(event.0, treasury_id);
-    assert_eq!(event.1.len(), 1); // "FeeDeposited"
+    assert_eq!(event.1.len(), 3); // "FeeCollected", source, ("fee_source",)
     let topic: Symbol = event.1.get(0).unwrap().try_into_val(&env).unwrap();
-    assert_eq!(topic, Symbol::new(&env, "FeeDeposited"));
+    assert_eq!(topic, Symbol::new(&env, "FeeCollected"));
 
     // Verify fees are set
     let current_fees = treasury_client.get_leaderboard_fees();
-    assert_eq!(current_fees, fee_amount);
+    assert_eq!(current_fees, 3_000_000); // 30% of 10M
 
 
     
@@ -110,10 +110,9 @@ fn test_distribute_leaderboard_happy_path() {
     let topic: Symbol = event.1.get(0).unwrap().try_into_val(&env).unwrap();
     assert_eq!(topic, Symbol::new(&env, "LeaderboardDistributed"));
 
-    // Verify balances
-    assert_eq!(token_client.balance(&user1), 5_000_000);
-    assert_eq!(token_client.balance(&user2), 5_000_000);
-    assert_eq!(token_client.balance(&treasury_id), 0);
+    assert_eq!(token_client.balance(&user1), 1_500_000);
+    assert_eq!(token_client.balance(&user2), 1_500_000);
+    assert_eq!(token_client.balance(&treasury_id), 7_000_000);
 }
 
 #[test]

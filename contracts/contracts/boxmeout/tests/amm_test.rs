@@ -1,14 +1,13 @@
 #![cfg(test)]
 
 use soroban_sdk::{
-    testutils::{Address as _, Events},
-    testutils::{Address as _, Ledger},
-    token::{StellarAssetClient, TokenClient},
+    testutils::{Address as _, Events, Ledger},
+    token::{Client as TokenClient, StellarAssetClient},
     Address, BytesN, Env, IntoVal, Symbol,
 };
 
-use boxmeout::helpers::*;
 use boxmeout::{AMMClient, AMM};
+use boxmeout::helpers::{get_pool_reserves, set_user_shares};
 
 const POOL_YES_RESERVE: &str = "pool_yes_reserve";
 const POOL_NO_RESERVE: &str = "pool_no_reserve";
@@ -81,7 +80,7 @@ user: &Address,
 market_id: &BytesN<32>,
 outcome: u32,
 ) -> u128 {
-env.as_contract(amm_id, || {
+    env.as_contract(amm_id, || {
     let key = (
         Symbol::new(env, USER_SHARES_KEY),
         market_id.clone(),
